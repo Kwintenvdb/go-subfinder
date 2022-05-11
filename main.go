@@ -10,9 +10,13 @@ import (
 func main() {
 	setupConfig()
 
-	apiKey := viper.GetString("apiKey")
-	client := client.New(apiKey)
-	client.FindSubtitles("Tokyo Vice")
+	client := client.New(client.ClientConfig{
+		ApiKey: viper.GetString("apiKey"),
+		Username: viper.GetString("username"),
+		Password: viper.GetString("password"),
+	})
+	client.Login()
+	// client.FindSubtitles("Tokyo Vice")
 }
 
 func setupConfig() {

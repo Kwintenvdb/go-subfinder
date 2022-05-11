@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,13 +11,62 @@ import (
 const apiServer = "https://api.opensubtitles.com/api/v1"
 
 type subtitleClient struct {
-	apiKey string
+	clientConfig ClientConfig
 }
 
-func New(apiKey string) subtitleClient {
+func New(config ClientConfig) subtitleClient {
 	return subtitleClient{
-		apiKey: apiKey,
+		clientConfig: config,
 	}
+}
+
+func (c subtitleClient) Login() {
+	url := fmt.Sprintf("%s/login", apiServer)
+
+	data := map[string]string{"username": c.clientConfig.Username, "password": c.clientConfig.Password}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("error marshalling POST body to JSON")
+		return
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Println(err)
+	}
+	req.Header.Add("Api-Key", c.clientConfig.ApiKey)
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	// fmt.Println(res)
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Printf("error reading body: %s", err)
+	}
+
+	var loginResponse loginResponseData
+	err2 := json.Unmarshal(body, &loginResponse)
+	if err2 != nil {
+		fmt.Println("error parsing json")
+		return
+	}
+	fmt.Println(loginResponse)
+}
+
+type loginResponseData struct {
+	User   userData
+	Token  string
+	Status int
+}
+
+type userData struct {
+	AllowedDownloads int `json:"allowed_downloads"`
+	UserId           int `json:"user_id"`
 }
 
 func (c subtitleClient) FindSubtitles(fileName string) {
@@ -25,13 +75,12 @@ func (c subtitleClient) FindSubtitles(fileName string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	req.Header.Add("Api-Key", c.apiKey)
+	req.Header.Add("Api-Key", c.clientConfig.ApiKey)
 	req.Header.Add("Content-Type", "application/json")
 
 	query := req.URL.Query()
 	query.Add("query", fileName)
 	req.URL.RawQuery = query.Encode()
-
 
 	client := &http.Client{}
 	res, err := client.Do(req)
