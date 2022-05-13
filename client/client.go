@@ -23,6 +23,8 @@ func New(config ClientConfig) subtitleClient {
 }
 
 func (c subtitleClient) Login() {
+	fmt.Println("Logging in...")
+
 	url := fmt.Sprintf("%s/login", apiServer)
 
 	data := map[string]string{"username": c.clientConfig.Username, "password": c.clientConfig.Password}
@@ -51,8 +53,9 @@ func (c subtitleClient) Login() {
 	}
 
 	loginResponse := fromJson[loginResponseData](body)
-	fmt.Println(loginResponse)
 	c.loginData = &loginResponse
+
+	fmt.Println("Logged in successfully.")
 }
 
 type loginResponseData struct {
@@ -67,6 +70,8 @@ type userData struct {
 }
 
 func (c subtitleClient) FindSubtitles(fileName string) QueryResponse {
+	fmt.Printf("Finding subtitles for file %s...\n", fileName)
+
 	url := fmt.Sprintf("%s/subtitles", apiServer)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -150,13 +155,13 @@ func (c subtitleClient) DownloadSubtitle(fileId int) {
 	if err != nil {
 		panic(err)
 	}
-	println(res)
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Printf("error reading body: %s", err)
 	}
 	downloadData := fromJson[DownloadResponse](body)
+	fmt.Printf("Successfully retrieved download link. Remaining downloads: %d\n", downloadData.Remaining)
 
 	out, err := os.Create(downloadData.FileName)
 	if err != nil {
@@ -171,6 +176,7 @@ func (c subtitleClient) DownloadSubtitle(fileId int) {
 	defer downloadRes.Body.Close()
 
 	io.Copy(out, downloadRes.Body)
+	fmt.Printf("Successfully downloaded subtitle file: %s\n", downloadData.FileName)
 }
 
 type DownloadResponse struct {

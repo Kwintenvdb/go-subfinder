@@ -18,7 +18,6 @@ func main() {
 	client.Login()
 	subs := client.FindSubtitles("tokyo.vice.s01e08.1080p.web.h264-cakes.mkv")
 	subId := subs.Data[0].Attributes.Files[0].FileId
-	println(subId)
 	client.DownloadSubtitle(subId)
 }
 
