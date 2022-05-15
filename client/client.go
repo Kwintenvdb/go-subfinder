@@ -11,18 +11,18 @@ import (
 
 const apiServer = "https://api.opensubtitles.com/api/v1"
 
-type subtitleClient struct {
+type SubtitleClient struct {
 	clientConfig ClientConfig
 	loginData    *loginResponseData
 }
 
-func New(config ClientConfig) subtitleClient {
-	return subtitleClient{
+func New(config ClientConfig) SubtitleClient {
+	return SubtitleClient{
 		clientConfig: config,
 	}
 }
 
-func (c subtitleClient) Login() {
+func (c SubtitleClient) Login() {
 	fmt.Println("Logging in...")
 
 	url := fmt.Sprintf("%s/login", apiServer)
@@ -69,8 +69,13 @@ type userData struct {
 	UserId           int `json:"user_id"`
 }
 
-func (c subtitleClient) FindSubtitles(fileName string) QueryResponse {
-	fmt.Printf("Finding subtitles for file %s...\n", fileName)
+type FindSubtitleOptions struct {
+	FileName string
+	Language string
+}
+
+func (c SubtitleClient) FindSubtitles(options FindSubtitleOptions) QueryResponse {
+	fmt.Printf("Finding subtitles for file %s in language %s...\n", options.FileName, options.Language)
 
 	url := fmt.Sprintf("%s/subtitles", apiServer)
 	req, err := http.NewRequest("GET", url, nil)
@@ -81,7 +86,8 @@ func (c subtitleClient) FindSubtitles(fileName string) QueryResponse {
 	req.Header.Add("Content-Type", "application/json")
 
 	query := req.URL.Query()
-	query.Add("query", fileName)
+	query.Add("query", options.FileName)
+	query.Add("languages", options.Language)
 	req.URL.RawQuery = query.Encode()
 
 	client := &http.Client{}
@@ -133,7 +139,7 @@ type FileData struct {
 	FileName string `json:"file_name"`
 }
 
-func (c subtitleClient) DownloadSubtitle(fileId int) {
+func (c SubtitleClient) DownloadSubtitle(fileId int) {
 	data := map[string]int{"file_id": fileId}
 	jsonData, err := json.Marshal(data)
 	if err != nil {

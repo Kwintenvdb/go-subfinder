@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/Kwintenvdb/go-subfinder/client"
 	mediafinder "github.com/Kwintenvdb/go-subfinder/media_finder"
@@ -23,23 +24,30 @@ var downloadCommand = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		println("executing download command")
 
-		println("Listing files in dir")
+		fmt.Println("Trying to find video file in current directory...")
 		video, err := mediafinder.FindVideoFileInCurrentDir()
 		if err != nil {
 			log.Fatal(err)
 		}
 		fmt.Printf("Found video file: %s\n", video)
 
-		client := client.New(client.ClientConfig{
-			ApiKey:   viper.GetString("apiKey"),
-			Username: viper.GetString("username"),
-			Password: viper.GetString("password"),
+		c := createClient()
+		c.Login()
+		subs := c.FindSubtitles(client.FindSubtitleOptions{
+			FileName: video,
+			Language: viper.GetString("language"),
 		})
-		client.Login()
-		subs := client.FindSubtitles(video)
 		subId := subs.Data[0].Attributes.Files[0].FileId
-		client.DownloadSubtitle(subId)
+		c.DownloadSubtitle(subId)
 	},
+}
+
+func createClient() client.SubtitleClient {
+	return client.New(client.ClientConfig{
+		ApiKey:   viper.GetString("apiKey"),
+		Username: viper.GetString("username"),
+		Password: viper.GetString("password"),
+	})
 }
 
 func ExecuteRootCommand() {
@@ -50,15 +58,25 @@ func ExecuteRootCommand() {
 }
 
 func main() {
+	cobra.OnInitialize(setupConfig)
+
+
+	downloadCommand.Flags().StringP("language", "l", "", "Specify the language")
+	viper.BindPFlag("language", downloadCommand.Flags().Lookup("language"))
+
+
 	rootCommand.AddCommand(downloadCommand)
 
-	cobra.OnInitialize(setupConfig)
 	ExecuteRootCommand()
 }
 
 func setupConfig() {
+	executablePath, _ := os.Executable()
+	executableConfigPath := filepath.Join(filepath.Dir(executablePath), "/config")
+
+	viper.AddConfigPath("./config")
+	viper.AddConfigPath(executableConfigPath)
 	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
 	viper.SetConfigType("yml")
 
 	err := viper.ReadInConfig()

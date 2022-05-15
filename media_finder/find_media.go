@@ -11,44 +11,43 @@ import (
 
 var (
 	videoFileExtensions = []string{
-		"webm",
-		"mkv",
-		"flv",
-		"vob",
-		"ogv",
-		"ogg",
-		"rrc",
-		"gif",
-		"mng",
-		"mov",
-		"avi",
-		"qt",
-		"wmv",
-		"yuv",
-		"rm",
-		"asf",
-		"amv",
-		"mp4",
-		"m4p",
-		"m4v",
-		"mpg",
-		"mp2",
-		"mpeg",
-		"mpe",
-		"mpv",
-		"m4v",
-		"svi",
-		"3gp",
-		"3g2",
-		"mxf",
-		"roq",
-		"nsv",
-		"flv",
-		"f4v",
-		"f4p",
-		"f4a",
-		"f4b",
-		"mod",
+		".webm",
+		".mkv",
+		".flv",
+		".vob",
+		".ogv",
+		".ogg",
+		".rrc",
+		".gif",
+		".mng",
+		".mov",
+		".avi",
+		".qt",
+		".wmv",
+		".yuv",
+		".rm",
+		".asf",
+		".amv",
+		".mp4",
+		".m4p",
+		".m4v",
+		".mpg",
+		".mp2",
+		".mpeg",
+		".mpe",
+		".mpv",
+		".m4v",
+		".svi",
+		".3gp",
+		".3g2",
+		".mxf",
+		".roq",
+		".nsv",
+		".flv",
+		".f4v",
+		".f4p",
+		".f4a",
+		".f4b",
 	}
 )
 
@@ -57,7 +56,6 @@ func FindVideoFileInCurrentDir() (fileName string, err error) {
 
 	videoFiles := make([]fs.FileInfo, 0)
 	for _, f := range files {
-		fmt.Println(f.Name())
 		if isVideoFile(f) {
 			videoFiles = append(videoFiles, f)
 		}
@@ -85,8 +83,8 @@ func getFilesInCurrentDir() []fs.FileInfo {
 }
 
 func isVideoFile(file fs.FileInfo) bool {
+	fileExt := filepath.Ext(file.Name())
 	for _, ext := range videoFileExtensions {
-		fileExt := filepath.Ext(file.Name())
 		if ext == fileExt {
 			return true
 		}
