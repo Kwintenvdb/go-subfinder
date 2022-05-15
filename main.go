@@ -51,7 +51,7 @@ var downloadCommand = &cobra.Command{
 
 func createClient() client.SubtitleClient {
 	return client.New(client.ClientConfig{
-		ApiKey:   viper.GetString("apiKey"),
+		ApiKey:   viper.GetString("api-key"),
 		Username: viper.GetString("username"),
 		Password: viper.GetString("password"),
 	})
@@ -67,9 +67,13 @@ func ExecuteRootCommand() {
 func main() {
 	cobra.OnInitialize(setupConfig)
 
+	downloadCommand.Flags().StringP("username", "u", "", "Specify your OpenSubtitles username")
+	downloadCommand.Flags().StringP("password", "p", "", "Specify your OpenSubtitles password")
 	downloadCommand.Flags().StringP("api-key", "a", "", "Specify your OpenSubtitles API key")
 	downloadCommand.Flags().StringP("language", "l", "en", "Specify the language")
 	
+	viper.BindPFlag("username", downloadCommand.Flags().Lookup("username"))
+	viper.BindPFlag("password", downloadCommand.Flags().Lookup("password"))
 	viper.BindPFlag("language", downloadCommand.Flags().Lookup("language"))
 	viper.BindPFlag("apiKey", downloadCommand.Flags().Lookup("api-key"))
 
