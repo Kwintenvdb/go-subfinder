@@ -33,12 +33,19 @@ var downloadCommand = &cobra.Command{
 
 		c := createClient()
 		c.Login()
-		subs := c.FindSubtitles(client.FindSubtitleOptions{
+
+		if subs, err := c.FindSubtitles(client.FindSubtitleOptions{
 			FileName: video,
 			Language: viper.GetString("language"),
-		})
-		subId := subs.Data[0].Attributes.Files[0].FileId
-		c.DownloadSubtitle(subId)
+		}); err == nil {
+			if len(subs.Data) == 0 {
+				fmt.Println("No subtitles found.")
+				return
+			}
+	
+			subId := subs.Data[0].Attributes.Files[0].FileId
+			c.DownloadSubtitle(subId)
+		}
 	},
 }
 
@@ -60,8 +67,11 @@ func ExecuteRootCommand() {
 func main() {
 	cobra.OnInitialize(setupConfig)
 
+	downloadCommand.Flags().StringP("api-key", "a", "", "Specify your OpenSubtitles API key")
 	downloadCommand.Flags().StringP("language", "l", "en", "Specify the language")
+	
 	viper.BindPFlag("language", downloadCommand.Flags().Lookup("language"))
+	viper.BindPFlag("apiKey", downloadCommand.Flags().Lookup("api-key"))
 
 	rootCommand.AddCommand(downloadCommand)
 

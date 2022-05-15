@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,10 +11,10 @@ import (
 )
 
 const (
-	apiBaseUrl = "https://api.opensubtitles.com/api/v1"
-	loginUrl = apiBaseUrl + "/login"
+	apiBaseUrl   = "https://api.opensubtitles.com/api/v1"
+	loginUrl     = apiBaseUrl + "/login"
 	subtitlesUrl = apiBaseUrl + "/subtitles"
-	downloadUrl = apiBaseUrl + "/download"
+	downloadUrl  = apiBaseUrl + "/download"
 )
 
 type SubtitleClient struct {
@@ -76,12 +77,12 @@ type FindSubtitleOptions struct {
 	Language string
 }
 
-func (c SubtitleClient) FindSubtitles(options FindSubtitleOptions) QueryResponse {
+func (c SubtitleClient) FindSubtitles(options FindSubtitleOptions) (QueryResponse, error) {
 	fmt.Printf("Finding subtitles for file %s in language %s...\n", options.FileName, options.Language)
 
 	req, err := http.NewRequest("GET", subtitlesUrl, nil)
 	if err != nil {
-		fmt.Println(err)
+		return QueryResponse{}, err
 	}
 	req.Header.Add("Api-Key", c.clientConfig.ApiKey)
 	req.Header.Add("Content-Type", "application/json")
@@ -93,16 +94,23 @@ func (c SubtitleClient) FindSubtitles(options FindSubtitleOptions) QueryResponse
 
 	client := &http.Client{}
 	res, err := client.Do(req)
-
 	if err != nil {
 		fmt.Printf("error: %s", err)
+		return QueryResponse{}, err
 	}
+
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Printf("error reading body: %s", err)
+		return QueryResponse{}, err
 	}
 
-	return fromJson[QueryResponse](body)
+	if res.StatusCode != 200 {
+		fmt.Printf("Received status code %d, response body: %s\n", res.StatusCode, string(body))
+		return QueryResponse{}, errors.New("status code of subtitle search response was not 200")
+	}
+
+	return fromJson[QueryResponse](body), nil
 }
 
 func fromJson[T any](responseBody []byte) T {
@@ -140,17 +148,18 @@ type FileData struct {
 	FileName string `json:"file_name"`
 }
 
-func (c SubtitleClient) DownloadSubtitle(fileId int) {
+func (c SubtitleClient) DownloadSubtitle(fileId int) error {
 	data := map[string]int{"file_id": fileId}
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println("error marshalling POST body to JSON")
-		return
+		return err
 	}
 
 	req, err := http.NewRequest("POST", downloadUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 	req.Header.Add("Api-Key", c.clientConfig.ApiKey)
 	req.Header.Add("Content-Type", "application/json")
@@ -159,30 +168,32 @@ func (c SubtitleClient) DownloadSubtitle(fileId int) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Printf("error reading body: %s", err)
+		return err
 	}
 	downloadData := fromJson[DownloadResponse](body)
 	fmt.Printf("Successfully retrieved download link. Remaining downloads: %d\n", downloadData.Remaining)
 
 	out, err := os.Create(downloadData.FileName)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer out.Close()
 
 	downloadRes, err := client.Get(downloadData.Link)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer downloadRes.Body.Close()
 
 	io.Copy(out, downloadRes.Body)
 	fmt.Printf("Successfully downloaded subtitle file: %s\n", downloadData.FileName)
+	return nil
 }
 
 type DownloadResponse struct {
