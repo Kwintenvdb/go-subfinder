@@ -9,7 +9,12 @@ import (
 	"os"
 )
 
-const apiServer = "https://api.opensubtitles.com/api/v1"
+const (
+	apiBaseUrl = "https://api.opensubtitles.com/api/v1"
+	loginUrl = apiBaseUrl + "/login"
+	subtitlesUrl = apiBaseUrl + "/subtitles"
+	downloadUrl = apiBaseUrl + "/download"
+)
 
 type SubtitleClient struct {
 	clientConfig ClientConfig
@@ -23,10 +28,6 @@ func New(config ClientConfig) SubtitleClient {
 }
 
 func (c SubtitleClient) Login() {
-	fmt.Println("Logging in...")
-
-	url := fmt.Sprintf("%s/login", apiServer)
-
 	data := map[string]string{"username": c.clientConfig.Username, "password": c.clientConfig.Password}
 	jsonData, err := json.Marshal(data)
 	if err != nil {
@@ -34,7 +35,8 @@ func (c SubtitleClient) Login() {
 		return
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	fmt.Println("Logging in...")
+	req, err := http.NewRequest("POST", loginUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -77,8 +79,7 @@ type FindSubtitleOptions struct {
 func (c SubtitleClient) FindSubtitles(options FindSubtitleOptions) QueryResponse {
 	fmt.Printf("Finding subtitles for file %s in language %s...\n", options.FileName, options.Language)
 
-	url := fmt.Sprintf("%s/subtitles", apiServer)
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", subtitlesUrl, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -147,8 +148,7 @@ func (c SubtitleClient) DownloadSubtitle(fileId int) {
 		return
 	}
 
-	url := fmt.Sprintf("%s/download", apiServer)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", downloadUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
 	}

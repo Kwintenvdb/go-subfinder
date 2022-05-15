@@ -1,4 +1,4 @@
-package mediafinder
+package videofinder
 
 import (
 	"errors"
@@ -53,14 +53,7 @@ var (
 
 func FindVideoFileInCurrentDir() (fileName string, err error) {
 	files := getFilesInCurrentDir()
-
-	videoFiles := make([]fs.FileInfo, 0)
-	for _, f := range files {
-		if isVideoFile(f) {
-			videoFiles = append(videoFiles, f)
-		}
-	}
-
+	videoFiles := findVideoFiles(files)
 	numVideoFiles := len(videoFiles)
 
 	if numVideoFiles == 0 {
@@ -80,6 +73,16 @@ func getFilesInCurrentDir() []fs.FileInfo {
 		log.Fatal(err)
 	}
 	return files
+}
+
+func findVideoFiles(files []fs.FileInfo) []fs.FileInfo {
+	videoFiles := make([]fs.FileInfo, 0)
+	for _, f := range files {
+		if isVideoFile(f) {
+			videoFiles = append(videoFiles, f)
+		}
+	}
+	return videoFiles
 }
 
 func isVideoFile(file fs.FileInfo) bool {

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/Kwintenvdb/go-subfinder/client"
-	mediafinder "github.com/Kwintenvdb/go-subfinder/media_finder"
+	"github.com/Kwintenvdb/go-subfinder/video_finder"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -25,7 +25,7 @@ var downloadCommand = &cobra.Command{
 		println("executing download command")
 
 		fmt.Println("Trying to find video file in current directory...")
-		video, err := mediafinder.FindVideoFileInCurrentDir()
+		video, err := videofinder.FindVideoFileInCurrentDir()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -60,10 +60,8 @@ func ExecuteRootCommand() {
 func main() {
 	cobra.OnInitialize(setupConfig)
 
-
-	downloadCommand.Flags().StringP("language", "l", "", "Specify the language")
+	downloadCommand.Flags().StringP("language", "l", "en", "Specify the language")
 	viper.BindPFlag("language", downloadCommand.Flags().Lookup("language"))
-
 
 	rootCommand.AddCommand(downloadCommand)
 
